@@ -5,10 +5,10 @@ const quotes = [
   },
 ];
 
+const addNewQuotes = document.getElementById("quoteDisplay");
 function displayRandomQuotes() {
   const randomQuote = Math.floor(Math.random() * quotes.length);
 
-  const addNewQuotes = document.getElementById("quoteDisplay");
   if (quotes[randomQuote]) {
     addNewQuotes.innerHTML = `${quotes[randomQuote].text}: ${quotes[randomQuote].category}`;
   }
@@ -45,4 +45,7 @@ function addQuote() {
   newQuoteText.value = "";
 
   alert("Quote added successfully!");
+  const p = document.createElement(`p`);
+  p.innerText = newQuote;
+  addNewQuotes.appendChild(p);
 }
