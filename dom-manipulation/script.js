@@ -29,16 +29,20 @@ function addQuote() {
   const text = newQuoteText.value.trim();
 
   if (!category || !text) {
-    alert("enter text and category");
-  } else {
-    const newQuote = {
-      category: category,
-      text: text,
-    };
-
-    quotes.push(newQuote);
-
-    newQuoteCategory.value = "";
-    newQuoteText.value = "";
+    alert("Enter both text and category!");
+    return; // Exit function early to avoid errors
   }
+
+  const newQuote = {
+    category: category,
+    text: text,
+  };
+
+  quotes.push(newQuote); // Add new quote to array
+
+  // Clear input fields
+  newQuoteCategory.value = "";
+  newQuoteText.value = "";
+
+  alert("Quote added successfully!");
 }
