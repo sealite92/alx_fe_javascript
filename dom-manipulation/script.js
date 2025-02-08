@@ -14,6 +14,8 @@ function displayRandomQuotes() {
   }
 }
 
+function showRandomQuote() {}
+
 const newQuoteBtn = document
   .getElementById("newQuote")
   .addEventListener("click", displayRandomQuotes);
