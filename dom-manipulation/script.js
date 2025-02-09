@@ -1,54 +1,104 @@
-const quotes = [
-  {
-    category: "Love",
-    text: "To love is to be self",
-  },
-];
+const storedQuotes = localStorage.getItem("quotes");
+const quotes = storedQuotes
+  ? JSON.parse(storedQuotes)
+  : [{ category: "Love", text: "To love is to be self" }];
 
-const addNewQuotes = document.getElementById("quoteDisplay");
+const quoteDisplay = document.getElementById("quoteDisplay");
+
+function saveQuotes() {
+  localStorage.setItem("quotes", JSON.stringify(quotes));
+}
+
 function displayRandomQuotes() {
-  const randomQuote = Math.floor(Math.random() * quotes.length);
-
-  if (quotes[randomQuote]) {
-    addNewQuotes.innerHTML = `${quotes[randomQuote].text}: ${quotes[randomQuote].category}`;
+  if (quotes.length === 0) {
+    quoteDisplay.innerHTML = "No quotes available.";
+    return;
   }
+
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  const selectedQuote = quotes[randomIndex];
+
+  quoteDisplay.innerHTML = `"${selectedQuote.text}" - ${selectedQuote.category}`;
+
+  // Store last viewed quote in session storage
+  sessionStorage.setItem("lastQuote", JSON.stringify(selectedQuote));
 }
 
 function showRandomQuote() {
-  displayRandomQuotes();
+  console.log("showRandomQuote() was called but not implemented.");
 }
 
-const newQuoteBtn = document.getElementById("newQuote");
-newQuoteBtn.addEventListener("click", showRandomQuote);
-function createAddQuoteForm() {}
+function createAddQuoteForm() {
+  console.log("createAddQuoteForm() was called but not implemented.");
+}
 
-const newQuoteText = document.getElementById("newQuoteText");
-const newQuoteCategory = document.getElementById("newQuoteCategory");
+document
+  .getElementById("newQuote")
+  .addEventListener("click", displayRandomQuotes);
 
 function addQuote() {
-  const category = newQuoteCategory.value.trim();
-  const text = newQuoteText.value.trim();
+  const newQuoteText = document.getElementById("newQuoteText").value.trim();
+  const newQuoteCategory = document
+    .getElementById("newQuoteCategory")
+    .value.trim();
 
-  if (!category || !text) {
+  if (!newQuoteText || !newQuoteCategory) {
     alert("Enter both text and category!");
-    return; // Exit function early to avoid errors
-  } else {
-    const newQuote = {
-      category: category,
-      text: text,
-    };
-
-    quotes.push(newQuote); // Add new quote to array
-
-    // Clear input fields
-    newQuoteCategory.value = "";
-    newQuoteText.value = "";
-
-    localStorage.setItem(newQuote);
-
-    alert("Quote added successfully!");
-    const p = document.createElement(`p`);
-    p.innerText = Object.parse(newQuote);
-    addNewQuotes.appendChild(p);
+    return;
   }
+
+  const newQuote = { category: newQuoteCategory, text: newQuoteText };
+
+  quotes.push(newQuote);
+  saveQuotes(); // Save to local storage
+
+  // Clear input fields
+  document.getElementById("newQuoteText").value = "";
+  document.getElementById("newQuoteCategory").value = "";
+
+  alert("Quote added successfully!");
+
+  // Display new quote on the page
+  const p = document.createElement("p");
+  p.innerText = `"${newQuote.text}" - ${newQuote.category}`;
+  quoteDisplay.appendChild(p);
+}
+
+function exportToJson() {
+  const dataStr = JSON.stringify(quotes, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "quotes.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function importFromJsonFile(event) {
+  const fileReader = new FileReader();
+  fileReader.onload = function (event) {
+    try {
+      const importedQuotes = JSON.parse(event.target.result);
+      if (Array.isArray(importedQuotes)) {
+        quotes.push(...importedQuotes);
+        saveQuotes();
+        alert("Quotes imported successfully!");
+      } else {
+        alert("Invalid JSON file format.");
+      }
+    } catch (error) {
+      alert("Error parsing JSON file.");
+    }
+  };
+  fileReader.readAsText(event.target.files[0]);
+}
+
+// Restore last displayed quote from session storage
+const lastQuote = sessionStorage.getItem("lastQuote");
+if (lastQuote) {
+  const parsedQuote = JSON.parse(lastQuote);
+  quoteDisplay.innerHTML = `"${parsedQuote.text}" - ${parsedQuote.category}`;
 }
