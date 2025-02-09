@@ -244,7 +244,7 @@ async function syncQuotes() {
     if (conflictsResolved) {
       saveQuotes();
       updateCategoryFilter();
-      showNotification("Data synced with server and conflicts resolved.");
+      showNotification("Quotes synced with server!"); // Updated notification message
     } else {
       console.log("Local data is already up-to-date with server.");
     }
