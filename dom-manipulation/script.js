@@ -1,3 +1,4 @@
+// Existing Code
 const storedQuotes = localStorage.getItem("quotes");
 const quotes = storedQuotes
   ? JSON.parse(storedQuotes)
@@ -20,7 +21,7 @@ function displayRandomQuotes() {
   const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
   const selectedQuote = filteredQuotes[randomIndex];
 
-  quoteDisplay.innerHTML = `"${selectedQuote.text}" - ${selectedQuote.category}`;
+  quoteDisplay.innerHTML = `${selectedQuote.text} - ${selectedQuote.category}`;
 
   // Store last viewed quote in session storage
   sessionStorage.setItem("lastQuote", JSON.stringify(selectedQuote));
@@ -145,7 +146,7 @@ function displayFilteredQuotes() {
 
   filteredQuotes.forEach((quote) => {
     const p = document.createElement("p");
-    p.innerText = `"${quote.text}" - ${quote.category}`;
+    p.innerText = `${quote.text} - ${quote.category}`;
     quoteDisplay.appendChild(p);
   });
 }
@@ -158,5 +159,58 @@ filterQuotes(); // Apply filtering on page load
 const lastQuote = sessionStorage.getItem("lastQuote");
 if (lastQuote) {
   const parsedQuote = JSON.parse(lastQuote);
-  quoteDisplay.innerHTML = `"${parsedQuote.text}" - ${parsedQuote.category}`;
+  quoteDisplay.innerHTML = `${parsedQuote.text} - ${parsedQuote.category}`;
 }
+
+// New Code for Syncing and Conflict Resolution
+
+// Simulate fetching data from a server every 5 seconds
+const serverUrl = "https://jsonplaceholder.typicode.com/posts"; // Using a mock URL
+
+function fetchQuotesFromServer() {
+  fetch(serverUrl)
+    .then((response) => response.json())
+    .then((data) => {
+      const serverQuotes = data.slice(0, 5).map((item) => ({
+        category: "General",
+        text: item.title,
+      }));
+
+      // Compare server data with local data and resolve conflicts
+      resolveDataConflicts(serverQuotes);
+    })
+    .catch((error) => console.error("Error fetching data from server:", error));
+}
+
+// Conflict resolution logic
+function resolveDataConflicts(serverQuotes) {
+  const localQuoteTexts = quotes.map((quote) => quote.text);
+  serverQuotes.forEach((serverQuote) => {
+    if (!localQuoteTexts.includes(serverQuote.text)) {
+      quotes.push(serverQuote); // Add new quotes from server
+    }
+  });
+
+  saveQuotes();
+  updateCategoryFilter(); // Update categories
+  alert("Data updated from the server!");
+}
+
+// Periodically sync with the server
+setInterval(fetchQuotesFromServer, 5000);
+
+// Conflict resolution notification
+function notifyUserOfConflict() {
+  const notification = document.createElement("div");
+  notification.innerText = "Server data has been updated, resolving conflicts!";
+  notification.style.backgroundColor = "#f8d7da";
+  notification.style.padding = "10px";
+  notification.style.marginTop = "10px";
+  notification.style.borderRadius = "5px";
+  document.body.appendChild(notification);
+
+  setTimeout(() => notification.remove(), 5000);
+}
+
+// Notify the user when there’s an update
+setInterval(notifyUserOfConflict, 5000);
