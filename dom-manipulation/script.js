@@ -98,10 +98,17 @@ function importFromJsonFile(event) {
 
 function populateCategories() {
   const categories = ["all", ...new Set(quotes.map((q) => q.category))];
+  const categoryFilter = document.getElementById("categoryFilter");
 
-  categoryFilter.innerHTML = categories
-    .map((cat) => `<option value="${cat}">${cat}</option>`)
-    .join("");
+  // Clear existing options
+  categoryFilter.textContent = "";
+
+  categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
 
   // Restore last selected filter
   const savedCategory = localStorage.getItem("selectedCategory");
