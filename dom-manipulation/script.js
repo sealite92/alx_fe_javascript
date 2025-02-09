@@ -173,49 +173,10 @@ if (lastQuote) {
   quoteDisplay.innerHTML = `${parsedQuote.text} - ${parsedQuote.category}`;
 }
 
-// ===== NEW CODE FOR SYNCING, CONFLICT RESOLUTION, & POSTING (Using async/await) =====
+// ===== NEW CODE FOR SYNCING, CONFLICT RESOLUTION, AND SERVER INTERACTIONS =====
 
-// Mock API URL for fetching and posting data
+// Mock API URL for fetching and posting data (using JSONPlaceholder)
 const serverUrl = "https://jsonplaceholder.typicode.com/posts";
-
-// Function to fetch quotes from the server using async/await
-async function fetchQuotesFromServer() {
-  try {
-    const response = await fetch(serverUrl);
-    if (!response.ok) {
-      throw new Error("Failed to fetch quotes from server");
-    }
-    const data = await response.json();
-    const serverQuotes = data.slice(0, 5).map((item) => ({
-      category: "General",
-      text: item.title,
-    }));
-
-    // Compare server data with local data and resolve conflicts
-    await resolveDataConflicts(serverQuotes);
-  } catch (error) {
-    console.error("Error fetching data from server:", error);
-  }
-}
-
-// Function to resolve data conflicts by adding only new quotes from the server
-async function resolveDataConflicts(serverQuotes) {
-  const localQuoteTexts = quotes.map((quote) => quote.text);
-  let newQuotesAdded = false;
-
-  serverQuotes.forEach((serverQuote) => {
-    if (!localQuoteTexts.includes(serverQuote.text)) {
-      quotes.push(serverQuote); // Add new quote from server
-      newQuotesAdded = true;
-    }
-  });
-
-  if (newQuotesAdded) {
-    saveQuotes();
-    updateCategoryFilter(); // Update categories
-    alert("Data updated from the server!");
-  }
-}
 
 // Function to post a quote to the server using async/await
 async function postQuoteToServer(quote) {
@@ -238,21 +199,72 @@ async function postQuoteToServer(quote) {
   }
 }
 
-// Periodically fetch new quotes from the server every 5 seconds
-setInterval(fetchQuotesFromServer, 5000);
+// New syncQuotes function: fetches server data, resolves conflicts,
+// and updates local storage. In this conflict resolution, the server’s
+// data takes precedence.
+async function syncQuotes() {
+  try {
+    // Fetch data from the server
+    const response = await fetch(serverUrl);
+    if (!response.ok) {
+      throw new Error("Failed to fetch quotes from server");
+    }
+    const data = await response.json();
 
-// Function to notify the user about server updates and conflict resolution
-function notifyUserOfConflict() {
+    // Map the fetched data to our quote format (using the first 5 items)
+    const serverQuotes = data.slice(0, 5).map((item) => ({
+      category: "General",
+      text: item.title,
+    }));
+
+    let conflictsResolved = false;
+    // For each server quote, check if it exists locally.
+    // If it exists but differs, or if it's new, update/add it.
+    serverQuotes.forEach((serverQuote) => {
+      const index = quotes.findIndex((q) => q.text === serverQuote.text);
+      if (index === -1) {
+        // New quote; add to local storage.
+        quotes.push(serverQuote);
+        conflictsResolved = true;
+      } else {
+        // Quote exists; update local data to match the server (server takes precedence)
+        if (quotes[index].category !== serverQuote.category) {
+          quotes[index] = serverQuote;
+          conflictsResolved = true;
+        }
+      }
+    });
+
+    // If any changes were made, update local storage and UI.
+    if (conflictsResolved) {
+      saveQuotes();
+      updateCategoryFilter();
+      showNotification("Data synced with server and conflicts resolved.");
+    } else {
+      console.log("No conflicts found; local data is up-to-date with server.");
+    }
+  } catch (error) {
+    console.error("Error syncing quotes:", error);
+  }
+}
+
+// Function to notify the user via UI about updates or resolved conflicts.
+function showNotification(message) {
   const notification = document.createElement("div");
-  notification.innerText = "Server data has been updated, resolving conflicts!";
+  notification.innerText = message;
   notification.style.backgroundColor = "#f8d7da";
+  notification.style.color = "#721c24";
   notification.style.padding = "10px";
   notification.style.marginTop = "10px";
   notification.style.borderRadius = "5px";
+  notification.style.fontWeight = "bold";
   document.body.appendChild(notification);
 
   setTimeout(() => notification.remove(), 5000);
 }
 
-// Periodically notify the user every 5 seconds (optional)
-setInterval(notifyUserOfConflict, 5000);
+// OPTIONAL: Manual sync trigger (if a button with id "syncButton" exists)
+document.getElementById("syncButton")?.addEventListener("click", syncQuotes);
+
+// Periodically sync with the server every 10 seconds
+setInterval(syncQuotes, 10000);
