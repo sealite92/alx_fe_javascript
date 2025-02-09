@@ -173,12 +173,32 @@ if (lastQuote) {
   quoteDisplay.innerHTML = `${parsedQuote.text} - ${parsedQuote.category}`;
 }
 
-// ===== NEW CODE FOR SYNCING, CONFLICT RESOLUTION, AND SERVER INTERACTIONS =====
+// ===== NEW CODE FOR SERVER SYNC, CONFLICT RESOLUTION, AND FETCHING =====
 
-// Mock API URL for fetching and posting data (using JSONPlaceholder)
+// Define the server URL (using JSONPlaceholder as a mock API)
 const serverUrl = "https://jsonplaceholder.typicode.com/posts";
 
-// Function to post a quote to the server using async/await
+// New async function to fetch quotes from the server using async/await
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(serverUrl);
+    if (!response.ok) {
+      throw new Error("Failed to fetch quotes from server");
+    }
+    const data = await response.json();
+    // Map the first 5 items to our quote format
+    const serverQuotes = data.slice(0, 5).map((item) => ({
+      category: "General",
+      text: item.title,
+    }));
+    return serverQuotes;
+  } catch (error) {
+    console.error("Error in fetchQuotesFromServer:", error);
+    return [];
+  }
+}
+
+// Function to post a quote to the server using async/await with POST method and proper headers
 async function postQuoteToServer(quote) {
   try {
     const response = await fetch(serverUrl, {
@@ -199,31 +219,17 @@ async function postQuoteToServer(quote) {
   }
 }
 
-// New syncQuotes function: fetches server data, resolves conflicts,
-// and updates local storage. In this conflict resolution, the server’s
-// data takes precedence.
+// New syncQuotes function: Fetch server quotes, resolve conflicts, and update local storage.
+// The conflict resolution strategy is simple: if a quote from the server is not found locally,
+// or if there’s a difference in data, the server's data takes precedence.
 async function syncQuotes() {
   try {
-    // Fetch data from the server
-    const response = await fetch(serverUrl);
-    if (!response.ok) {
-      throw new Error("Failed to fetch quotes from server");
-    }
-    const data = await response.json();
-
-    // Map the fetched data to our quote format (using the first 5 items)
-    const serverQuotes = data.slice(0, 5).map((item) => ({
-      category: "General",
-      text: item.title,
-    }));
-
+    const serverQuotes = await fetchQuotesFromServer();
     let conflictsResolved = false;
-    // For each server quote, check if it exists locally.
-    // If it exists but differs, or if it's new, update/add it.
     serverQuotes.forEach((serverQuote) => {
       const index = quotes.findIndex((q) => q.text === serverQuote.text);
       if (index === -1) {
-        // New quote; add to local storage.
+        // New quote from server; add it locally.
         quotes.push(serverQuote);
         conflictsResolved = true;
       } else {
@@ -235,20 +241,19 @@ async function syncQuotes() {
       }
     });
 
-    // If any changes were made, update local storage and UI.
     if (conflictsResolved) {
       saveQuotes();
       updateCategoryFilter();
       showNotification("Data synced with server and conflicts resolved.");
     } else {
-      console.log("No conflicts found; local data is up-to-date with server.");
+      console.log("Local data is already up-to-date with server.");
     }
   } catch (error) {
     console.error("Error syncing quotes:", error);
   }
 }
 
-// Function to notify the user via UI about updates or resolved conflicts.
+// Function to display a notification to the user about updates or resolved conflicts.
 function showNotification(message) {
   const notification = document.createElement("div");
   notification.innerText = message;
